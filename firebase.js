@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-analytics.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-import { getFirestore, collection,doc, setDoc,addDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, addDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -120,4 +120,38 @@ export async function savePostinFirebase(postData) {
   const docRef = await addDoc(collection(db, "posts"), {
     postData
   });
+}
+
+
+//---------------get post--------------------------------
+export async function getPosts() {
+  let posts = [];
+  try {
+    const querySnapshot = await getDocs(collection(db, "posts"));
+    await Promise.all( querySnapshot.docs.map(async (post) => {
+      // doc.data() is never undefined for query doc snapshots
+      console.log(post.id, " => ", post.data(), "=>");
+      const docRef = doc(db, "users", post.data().postData.postUser);
+      const docSnap = await getDoc(docRef);
+      // posts.push({ id: post.id, ...post.data().postData });
+
+      if (docSnap.exists()) {
+        console.log("Document data:", docSnap.data().userDetailWithoutPass);
+        let eachPost = post.data().postData;
+        let eachPostUser = docSnap.data().userDetailWithoutPass;
+        posts.push({...eachPost, ...eachPostUser});
+
+      } else {
+        // docSnap.data() will be undefined in this case
+        console.log("No such document!");
+      }
+
+    }));
+  } catch(err) {
+    console.log(err);
+  }
+  return new Promise((resolve, reject) => {
+    resolve(posts)
+    console.log(posts.length);
+  })
 }
