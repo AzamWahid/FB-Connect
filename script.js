@@ -12,14 +12,41 @@ let btnGet = document.querySelector('#button_value');
 let inputGet = document.querySelector('#input_vlaue');
 let post = document.querySelector('#post');
 
+const fileInput = document.querySelector('#fileInput');
+
+
+
 btnGet.addEventListener('click', savePost);
 
 let loggedInUserId;
 
-function savePost() {
+
+async function savePost() {
+    let postPicdata;
+    const file = fileInput.files[0];
+    if (!file) {
+        alert('Please choose a file to upload');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'fbconnect'); // Set your upload preset
+
+    try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/dl4in7cwc/image/upload`, {
+            method: 'POST',
+            body: formData,
+        });
+
+       postPicdata = await response.json();
+    } catch (error) {
+        console.error('Error:', error);
+    }
+
     const postData = {
         postText: inputGet.value,
-        postPic: "",
+        postPic: postPicdata.secure_url,
         postUser: loggedInUserId
     }
     savePostinFirebase(postData);
@@ -53,13 +80,13 @@ async function getAllPosts() {
     const Allposts = await getPosts();
     console.log(Allposts);
     const postsArray = Allposts.map((post) => {
-    console.log(5);
+        console.log(5);
         return `<div class="post_container">
                 <div class="post_row">
                     <div class="user_profile">
                         <img src="images/profile-pic.png" alt="Pro We Are Pro You Now">
                         <div>
-                            <p>${post.user}</p>
+                            <p>${post.user.toUpperCase()}</p>
                             <span>Sep 9 2022 , 12:50 Am</span>
                         </div>
                     </div>
@@ -67,7 +94,7 @@ async function getAllPosts() {
                 </div>
                 <p class="post_text">${post.postText}
                 </p>
-                <img src="images/feed-image-1.png" alt="Feedback" class="post_img">
+                ${post.postPic && `<img src=${post.postPic} alt="Feedback" class="post_img">`}
                 <div class="post_row">
                     <div class="activity_icon">
                         <div><img src="images/like-blue.png" alt="Like Kardo">120</div>
@@ -79,7 +106,7 @@ async function getAllPosts() {
                     </div>
                 </div>
                 </div>`
-})
+    })
     console.log(postsArray);
     postCont.innerHTML = postsArray.join('');
 

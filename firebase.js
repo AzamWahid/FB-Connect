@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-analytics.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, addDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, addDoc, getDocs, getDoc,query,orderBy } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -90,7 +90,7 @@ export function loginStateObserver() {
         // ...
         // alert("Please login first");
         setTimeout(() => {
-          window.location.href = './login/index.html'
+          window.location.href = './login/login.html'
         }, 1000)
         reject("No User is logged In")
       }
@@ -104,7 +104,7 @@ export async function logout() {
   try {
     await signOut(auth)
     setTimeout(() => {
-      window.location.href = './login/index.html'
+      window.location.href = './login/login.html'
     }, 1000);
   }
   catch (error) {
@@ -117,9 +117,14 @@ export async function logout() {
 
 //------------------------SAVE POST--------------------------------
 export async function savePostinFirebase(postData) {
-  const docRef = await addDoc(collection(db, "posts"), {
-    postData
-  });
+  try {
+    const docRef = await addDoc(collection(db, "posts"), {
+      postData
+    });
+    window.location.reload();
+  } catch (err) {
+    console.log(err.message);
+  }
 }
 
 
@@ -127,8 +132,10 @@ export async function savePostinFirebase(postData) {
 export async function getPosts() {
   let posts = [];
   try {
-    const querySnapshot = await getDocs(collection(db, "posts"));
-    await Promise.all( querySnapshot.docs.map(async (post) => {
+    // const querySnapshot = await getDocs(collection(db, "posts"));
+    const q = await query(collection(db, "posts"),orderBy('postData'));
+    const querySnapshot = await getDocs(q);
+    await Promise.all(querySnapshot.docs.map(async (post) => {
       // doc.data() is never undefined for query doc snapshots
       console.log(post.id, " => ", post.data(), "=>");
       const docRef = doc(db, "users", post.data().postData.postUser);
@@ -139,7 +146,7 @@ export async function getPosts() {
         console.log("Document data:", docSnap.data().userDetailWithoutPass);
         let eachPost = post.data().postData;
         let eachPostUser = docSnap.data().userDetailWithoutPass;
-        posts.push({...eachPost, ...eachPostUser});
+        posts.push({ ...eachPost, ...eachPostUser });
 
       } else {
         // docSnap.data() will be undefined in this case
@@ -147,7 +154,7 @@ export async function getPosts() {
       }
 
     }));
-  } catch(err) {
+  } catch (err) {
     console.log(err);
   }
   return new Promise((resolve, reject) => {
